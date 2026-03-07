@@ -719,40 +719,25 @@
       }
 
 // Carrega a lista de livros no menu separados por Testamento
+// Carrega a lista de livros no menu de forma direta
 function iniciarBiblia() {
     const selectLivro = document.getElementById('biblia-livro');
     selectLivro.innerHTML = '<option value="">Selecione o Livro</option>';
-    
-    // Cria as "pastas" separadoras dentro do menu
-    const grupoVelhoTestamento = document.createElement('optgroup');
-    grupoVelhoTestamento.label = "📖 VELHO TESTAMENTO";
-    
-    const grupoNovoTestamento = document.createElement('optgroup');
-    grupoNovoTestamento.label = "✝️ NOVO TESTAMENTO";
 
     dadosBiblia.forEach((livro, index) => {
         let option = document.createElement('option');
         option.value = livro.id;
         option.text = livro.nome;
         
-        // Mateus é o 40º livro (índice 39, pois a contagem começa do zero)
-        if (index < 39) {
-            // Se for antes de Mateus, vai pro Velho Testamento
-            grupoVelhoTestamento.appendChild(option);
-        } else {
-            // Se for Novo Testamento, coloca no grupo do NT e força o negrito
+        // A partir do índice 39 (Mateus), é Novo Testamento
+        if (index >= 39) {
+            // Tenta forçar o negrito
             option.style.fontWeight = "bold"; 
-            
-            // Um truque visual: colocar um espacinho extra ou um marcador ajuda muito
-            option.text = "• " + livro.nome; 
-            
-            grupoNovoTestamento.appendChild(option);
         }
+        
+        // Adiciona direto no menu principal, sem separadores
+        selectLivro.appendChild(option);
     });
-
-    // Adiciona os dois grupos montados dentro do menu principal
-    selectLivro.appendChild(grupoVelhoTestamento);
-    selectLivro.appendChild(grupoNovoTestamento);
 }
 
       function atualizarCapitulos() {
