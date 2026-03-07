@@ -588,7 +588,8 @@
             }
 
             // Busca Versículo do Dia
-            try {
+          carregarVersiculoDoDia();
+            /*try {
                 const versiculo = await fetchGoogle('buscarVersiculoDoDia');
                 document.getElementById('texto-versiculo-dia').innerText = `"${versiculo.texto}"`;
                 document.getElementById('ref-versiculo-dia').innerText = `- ${versiculo.referencia}`;
@@ -596,7 +597,7 @@
                 // Versículo reserva caso dê algum erro no Drive
                 document.getElementById('texto-versiculo-dia').innerText = "\"Alegrai-vos sempre no Senhor; outra vez digo: alegrai-vos.\"";
                 document.getElementById('ref-versiculo-dia').innerText = "- Filipenses 4:4";
-            }
+            }*/
             
         } catch(e) {
             console.log("Erro ao carregar dados.");
@@ -906,6 +907,39 @@
           setTimeout(() => overlay.style.display = 'none', 300);
       }
 
+
+async function carregarVersiculoDoDia() {
+          // 31 referências de ouro do Novo Testamento (formato: livro/capitulo/versiculo)
+          const versiculosNT = [
+              "rm/8/28", "jo/3/16", "fp/4/13", "mt/11/28", "rm/12/2",
+              "gl/2/20", "ef/2/8", "fp/4/6", "cl/3/14", "2tm/1/7",
+              "hb/11/1", "tg/1/5", "1pe/5/7", "1jo/4/8", "ap/3/20",
+              "mt/6/33", "mc/11/24", "lc/1/37", "jo/14/6", "at/1/8",
+              "rm/5/8", "1co/13/4", "2co/5/17", "gl/5/22", "ef/6/11",
+              "fp/1/6", "cl/1/15", "1ts/5/16", "hb/12/2", "tg/4/8", "1pe/2/9"
+          ];
+
+          // Pega o dia do mês (1 a 31) e descobre qual referência usar
+          const diaHoje = new Date().getDate(); 
+          const referenciaEscolhida = versiculosNT[diaHoje - 1]; 
+
+          try {
+              // Chama a API pedindo a versão ARA (Almeida Revista e Atualizada)
+              const resposta = await fetch(`https://www.abibliadigital.com.br/api/verses/ara/${referenciaEscolhida}`);
+              const dados = await resposta.json();
+
+              // Joga o texto e o livro lá no card vermelho
+              document.getElementById('texto-versiculo-dia').innerText = `"${dados.text}"`;
+              document.getElementById('ref-versiculo-dia').innerText = `- ${dados.book.name} ${dados.chapter}:${dados.number}`;
+          } catch (erro) {
+              // Se a internet do usuário estiver ruim e a API não responder, mostra um de reserva
+              document.getElementById('texto-versiculo-dia').innerText = '"Tudo posso naquele que me fortalece."';
+              document.getElementById('ref-versiculo-dia').innerText = "- Filipenses 4:13";
+          }
+      }
+
+      
+      
       function iniciarBiblia() {
           const selectLivro = document.getElementById('biblia-livro');
           selectLivro.innerHTML = '<option value="">Selecione o Livro</option>';
