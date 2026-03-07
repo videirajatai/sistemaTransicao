@@ -223,8 +223,8 @@
               <div style="flex:1;">
                  <label>Categoria</label>
                  <select name="categoria" required>
-                    <option value="RL">RL</option>
-                    <option value="TODA IGREJA">TODA IGREJA</option>
+                    <option value="RADICAIS LIVRES">RADICAIS LIVRES</option>
+                    <option value="GOOGLE AGENDA">GOOGLE AGENDA</option>
                     <option value="KIDS">KIDS</option>
                  </select>
               </div>
@@ -394,9 +394,9 @@
              try { if(a[0].includes('-')) { const dp=a[0].split('-'); dataF=`${dp[2]}/${dp[1]}/${dp[0]}`; } } catch(e){}
 
              let corCategoria = '#555';
-             if(a[4] === 'RL') corCategoria = '#0056b3';
-             else if(a[4] === 'TODA IGREJA') corCategoria = 'var(--primary)';
-             else if(a[4] === 'KIDS') corCategoria = '#b58900';
+             if(a[4] === 'RADICAIS LIVRES') corCategoria = '#0056b3';
+             else if(a[4] === 'GOOGLE AGENDA') corCategoria = 'var(--primary)';
+             else if(a[4] === 'RADICAIS KIDS') corCategoria = '#b58900';
 
              let corTipo = (a[3] === 'Pago') ? '#dc3545' : 'var(--success-text)';
 
