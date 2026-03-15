@@ -76,7 +76,7 @@
             <div id="area-escolha" style="display: none; text-align: center;">
                 <h2>Escolha o seu Painel</h2>
                 <div id="botoes-paineis" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;"></div>
-                <button onclick="sair()" style="margin-top: 20px; background-color: #dc3545;">Sair</button>
+                <button onclick="sair()" style="margin-top: 20px; background-color: #dc3545;">Voltar</button>
             </div>
         </div>
 
@@ -142,13 +142,15 @@
         const SB_KEY = "sb_publishable_nFMOC-fPkJnsmf5_noOTBg_tKV6Cr1q";
         
         // URL do Google Script usada para agenda / envio de e-mails
-        const URL_GOOGLE_SCRIPT = "https://script.google.com/macros/s/AKfycbxnystn3UqAKnfLUgw7tXS8CzrnpxTS0iax80rhMCRs-T47ibodGYvbRw2KRrtsnCzn/exec"; ; 
+        const URL_GOOGLE_SCRIPT = "https://script.google.com/macros/s/AKfycbxnystn3UqAKnfLUgw7tXS8CzrnpxTS0iax80rhMCRs-T47ibodGYvbRw2KRrtsnCzn/exec";  
         // ==================================================
 
         // Função para alternar entre as 3 telas
         function mudarTela(idTelaAlvo) {
             document.querySelectorAll('.tela').forEach(tela => tela.classList.remove('ativa'));
             document.getElementById(idTelaAlvo).classList.add('ativa');
+            document.getElementById('area-escolha').style.display = 'none'; // Reseta área de escolha
+            document.getElementById('area-form').style.display = 'block';
         }
 
         function verificarEnter(event, contexto) { 
@@ -159,7 +161,7 @@
             }
         }
 
-        // ================= FUNÇÕES DE LOGIN (Mantidas e adaptadas do original) =================
+        // ================= FUNÇÕES DE LOGIN COM MULTI-PERFIS =================
         async function verificarLogin() {
             const usuarioInput = document.getElementById('usuario-input').value.trim();
             const senhaInput = document.getElementById('senha-input').value.trim();
@@ -174,8 +176,8 @@
             btn.disabled = true;
 
             try {
-                // Adapte o nome da tabela 'usuarios' e as colunas se necessário
-                const resposta = await fetch(`${SB_URL}/rest/v1/usuarios?usuario=eq.${encodeURIComponent(usuarioInput)}&select=*`, {
+                // Revertido para o formato que funcionava no seu código original
+                const resposta = await fetch(`${SB_URL}/rest/v1/usuarios?usuario=eq.${usuarioInput}&select=*`, {
                     headers: {
                         'apikey': SB_KEY,
                         'Authorization': `Bearer ${SB_KEY}`
@@ -186,6 +188,8 @@
 
                 if (dados.length > 0) {
                     const usuarioBanco = dados[0];
+                    
+                    // Verifica senha exata
                     if (usuarioBanco.senha === senhaInput) {
                         
                         // Guarda informações na sessão
@@ -195,19 +199,30 @@
 
                         await registrarLogAcao("Fez login no sistema.");
 
-                        // Redirecionamento baseado no nível
-                        if (usuarioBanco.nivel === 'admin') window.location.href = 'admin.html';
-                        else if (usuarioBanco.nivel === 'pastor') window.location.href = 'pastor.html';
-                        else if (usuarioBanco.nivel === 'discipulador') window.location.href = 'discipulador.html';
-                        else if (usuarioBanco.nivel === 'lider') window.location.href = 'lider.html';
-                        else if (usuarioBanco.nivel === 'financeiro') window.location.href = 'financeiro.html';
-                        else if (usuarioBanco.nivel === 'membro') {
-                            alert("Área de membro em desenvolvimento. Em breve você terá acesso ao seu painel!");
-                            // window.location.href = 'membro.html'; // Descomente quando a tela de membro existir
+                        // LÓGICA DE MÚLTIPLOS PERFIS
+                        let perfis = [];
+                        
+                        if (Array.isArray(usuarioBanco.nivel)) {
+                            perfis = usuarioBanco.nivel;
+                        } else if (typeof usuarioBanco.nivel === 'string') {
+                            perfis = usuarioBanco.nivel.split(',').map(p => p.trim().toLowerCase());
                         }
-                        else {
-                            alert("Nível de acesso não reconhecido.");
+
+                        if (perfis.length === 0) {
+                            alert("Nenhum perfil de acesso encontrado para este usuário.");
+                            btn.innerText = "Entrar no Sistema";
+                            btn.disabled = false;
+                            return;
                         }
+
+                        if (perfis.length === 1) {
+                            // Se tem só um, vai direto
+                            redirecionarParaPainel(perfis[0]);
+                        } else {
+                            // Se tem mais de um, escolhe
+                            mostrarOpcoesPainel(perfis);
+                        }
+
                     } else {
                         alert("Senha incorreta.");
                     }
@@ -221,6 +236,46 @@
                 btn.innerText = "Entrar no Sistema";
                 btn.disabled = false;
             }
+        }
+
+        // Função para direcionar ao painel correto
+        function redirecionarParaPainel(nivel) {
+            if (nivel === 'admin') window.location.href = 'admin.html';
+            else if (nivel === 'pastor') window.location.href = 'pastor.html';
+            else if (nivel === 'discipulador') window.location.href = 'discipulador.html';
+            else if (nivel === 'lider') window.location.href = 'lider.html';
+            else if (nivel === 'financeiro') window.location.href = 'financeiro.html';
+            else if (nivel === 'membro') {
+                alert("Área de membro em desenvolvimento. Em breve você terá acesso ao seu painel!");
+            }
+            else {
+                alert("Nível de acesso não reconhecido: " + nivel);
+            }
+        }
+
+        // Função para montar os botões caso tenha mais de 1 acesso
+        function mostrarOpcoesPainel(perfis) {
+            document.getElementById('area-form').style.display = 'none';
+            document.getElementById('area-escolha').style.display = 'block';
+
+            const divBotoes = document.getElementById('botoes-paineis');
+            divBotoes.innerHTML = ''; 
+
+            perfis.forEach(perfil => {
+                let nomeBotao = perfil.charAt(0).toUpperCase() + perfil.slice(1);
+                
+                const btnPerfil = document.createElement('button');
+                btnPerfil.innerText = `Acessar como ${nomeBotao}`;
+                btnPerfil.style.backgroundColor = 'var(--ouro-videira, #b8860b)';
+                btnPerfil.style.color = '#fff';
+                btnPerfil.style.border = 'none';
+                btnPerfil.style.padding = '10px';
+                btnPerfil.style.borderRadius = '5px';
+                btnPerfil.style.cursor = 'pointer';
+                btnPerfil.onclick = () => redirecionarParaPainel(perfil);
+                
+                divBotoes.appendChild(btnPerfil);
+            });
         }
 
         // ================= FUNÇÃO DE CADASTRO =================
@@ -246,11 +301,10 @@
                 whatsapp: whatsapp,
                 usuario: usuario,
                 senha: senha,
-                nivel: 'membro' // Força o nível como membro
+                nivel: 'membro' 
             };
 
             try {
-                // Insere no banco (tabela 'usuarios' - ajuste se o nome for diferente)
                 const resposta = await fetch(`${SB_URL}/rest/v1/usuarios`, {
                     method: 'POST',
                     headers: {
@@ -265,14 +319,13 @@
                 if (resposta.ok) {
                     alert("Cadastro realizado com sucesso! Você já pode fazer login.");
                     
-                    // Limpa os campos
                     document.getElementById('cad-nome').value = "";
                     document.getElementById('cad-email').value = "";
                     document.getElementById('cad-whatsapp').value = "";
                     document.getElementById('cad-usuario').value = "";
                     document.getElementById('cad-senha').value = "";
                     
-                    mudarTela('tela-login'); // Volta para o login
+                    mudarTela('tela-login'); 
                 } else {
                     const erro = await resposta.json();
                     alert("Erro ao cadastrar. Verifique se o usuário já existe.");
@@ -287,7 +340,7 @@
             }
         }
 
-        // ================= FUNÇÃO DE RECUPERAR SENHA (via GS) =================
+        // ================= FUNÇÃO DE RECUPERAR SENHA =================
         async function enviarRecuperacao() {
             const email = document.getElementById('rec-email').value.trim();
             const btn = document.getElementById('btn-enviar-link');
@@ -301,10 +354,9 @@
             btn.disabled = true;
 
             try {
-                // Envia para o Google Script processar o envio de e-mail
                 const resposta = await fetch(URL_GOOGLE_SCRIPT, {
                     method: 'POST',
-                    mode: 'no-cors', // Dependendo de como o GS está configurado
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -314,7 +366,6 @@
                     })
                 });
 
-                // Como usamos no-cors no GS, não conseguimos ler o json de retorno direto, mas assumimos sucesso se a promise resolver
                 alert("Se o e-mail estiver cadastrado, você receberá um link de redefinição em breve.");
                 document.getElementById('rec-email').value = "";
                 mudarTela('tela-login');
@@ -328,7 +379,7 @@
             }
         }
 
-        // ================= FUNÇÕES DE LOG E UTILIDADES =================
+        // ================= FUNÇÕES DE LOG E SAÍDA =================
         async function registrarLogAcao(acaoRealizada) {
             const nomeReal = sessionStorage.getItem('usuarioLogado') || 'Desconhecido';
             const user = sessionStorage.getItem('loginDigitado') || 'Desconhecido';
