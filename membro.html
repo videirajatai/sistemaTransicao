@@ -114,7 +114,7 @@
 
         /* BÍBLIA */
         .biblia-controles { background-color: var(--card-bg); padding: 15px; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;}
-        .biblia-controles select { flex: 1; min-width: 100px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-family: 'Inter', sans-serif; background: #f8fafc; cursor: pointer; }
+        .biblia-controles select { flex: 1; min-width: 100px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-family: 'Inter', sans-serif; background: #f8fafc; cursor: pointer;}
         .biblia-texto-area { background: var(--card-bg); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); line-height: 1.8; font-size: 1rem; color: #334155; }
         .biblia-placeholder { text-align: center; color: #94a3b8; font-style: italic; margin-top: 20px; }
 
@@ -237,7 +237,6 @@
         const SB_URL = "https://ryvfogmfpjyamgqsltks.supabase.co"; 
         const SB_KEY = "sb_publishable_nFMOC-fPkJnsmf5_noOTBg_tKV6Cr1q";
         
-        // URL DIRETA e PURA da sua Agenda no Google Script
         const URL_GOOGLE_SCRIPT = "https://script.google.com/macros/s/AKfycbxnystn3UqAKnfLUgw7tXS8CzrnpxTS0iax80rhMCRs-T47ibodGYvbRw2KRrtsnCzn/exec";
 
         let listaPalavras = [];
@@ -261,7 +260,7 @@
         async function carregarDados(icon) {
             if(icon) icon.classList.add('fa-spin');
             
-            // CARREGAR PALAVRAS (SUPABASE)
+            // CARREGAR PALAVRAS (DO SUPABASE)
             try {
                 const respostaPalavras = await fetch(`${SB_URL}/rest/v1/palavras?select=*`, {
                     headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
@@ -287,11 +286,18 @@
                 document.getElementById('listaPalavras').innerHTML = '<p style="text-align:center; color:#dc3545;">Erro ao carregar palavras.</p>';
             }
 
-            // CARREGAR AGENDA (GOOGLE SCRIPT - URL PURA E COM SUPORTE A REDIRECT)
+            // CARREGAR AGENDA (DO GOOGLE SCRIPT - DEVOLVIDO AO SEU MODELO ORIGINAL)
             try {
-                const respostaAgenda = await fetch(URL_GOOGLE_SCRIPT, { redirect: "follow" });
-                const dados = await respostaAgenda.json();
-                renderizarAgenda(dados);
+                const urlCompleta = `${URL_GOOGLE_SCRIPT}?action=buscarAgenda`;
+                const respostaAgenda = await fetch(urlCompleta);
+                const dadosTexto = await respostaAgenda.text();
+                
+                try {
+                    listaAgenda = JSON.parse(dadosTexto);
+                    renderizarAgenda(listaAgenda);
+                } catch(errParse) {
+                    renderizarAgenda([]); 
+                }
             } catch(e) {
                 console.error("Erro na Agenda:", e);
                 renderizarAgenda([]);
@@ -350,7 +356,7 @@
                 <div class="member-card">
                     <div class="card-header">
                         <strong style="font-size: 1.1rem; color: #1e293b;">${a[0] || ''}</strong>
-                        <span class="cat-badge" style="background-color: ${corTipo}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">${a[2] || 'Evento'}</span>
+                        <span class="cat-badge" style="background-color: ${corTipo}; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;">${a[2] || 'Evento'}</span>
                     </div>
                     <div style="font-size: 0.9rem; color: #64748b; margin-top: 5px;">
                         <i class="far fa-clock"></i> ${a[1] || ''}
