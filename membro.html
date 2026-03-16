@@ -114,7 +114,7 @@
 
         /* BÍBLIA */
         .biblia-controles { background-color: var(--card-bg); padding: 15px; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;}
-        .biblia-controles select { flex: 1; min-width: 100px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-family: 'Inter', sans-serif; background: #f8fafc; cursor: pointer;}
+        .biblia-controles select { flex: 1; min-width: 100px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-family: 'Inter', sans-serif; background: #f8fafc; cursor: pointer; }
         .biblia-texto-area { background: var(--card-bg); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); line-height: 1.8; font-size: 1rem; color: #334155; }
         .biblia-placeholder { text-align: center; color: #94a3b8; font-style: italic; margin-top: 20px; }
 
@@ -168,7 +168,7 @@
                 <select id="biblia-capitulo" onchange="buscarCapituloBiblia()"></select>
             </div>
             <div class="biblia-texto-area" id="biblia-conteudo">
-                <p class="biblia-placeholder"><i class="fas fa-spinner fa-spin'></i> Carregando texto...</p>
+                <p class="biblia-placeholder"><i class="fas fa-spinner fa-spin"></i> Carregando texto...</p>
             </div>
         </div>
 
@@ -222,8 +222,9 @@
         const usuarioLogado = sessionStorage.getItem('usuarioLogado');
         
         if (!usuarioLogado) {
-            window.location.href = 'index.html'; 
+            window.location.href = 'index.html'; // Se não estiver logado, volta pro início
         } else {
+            // Mostra apenas o primeiro nome do membro na saudação
             const primeiroNome = usuarioLogado.split(' ')[0];
             document.getElementById('texto-boas-vindas').innerText = `Olá, ${primeiroNome}`;
         }
@@ -237,7 +238,8 @@
         const SB_URL = "https://ryvfogmfpjyamgqsltks.supabase.co"; 
         const SB_KEY = "sb_publishable_nFMOC-fPkJnsmf5_noOTBg_tKV6Cr1q";
         
-        const URL_GOOGLE_SCRIPT = "https://script.google.com/macros/s/AKfycbxnystn3UqAKnfLUgw7tXS8CzrnpxTS0iax80rhMCRs-T47ibodGYvbRw2KRrtsnCzn/exec";
+        // RECUPERADO O SEU SESSIONSTORAGE PARA NÃO QUEBRAR A COMUNICAÇÃO DA AGENDA E E-MAIL
+        const URL_GOOGLE_SCRIPT = sessionStorage.getItem('urlApi') || "https://script.google.com/macros/s/AKfycbxnystn3UqAKnfLUgw7tXS8CzrnpxTS0iax80rhMCRs-T47ibodGYvbRw2KRrtsnCzn/exec";
 
         let listaPalavras = [];
         let listaAgenda = [];
@@ -253,13 +255,14 @@
 
         // ================= CARREGAMENTO DE DADOS INICIAL =================
         window.onload = () => {
-            carregarLivrosBiblia(); // Isso já chama atualizarCapitulos e buscarCapituloBiblia automaticamente
+            carregarLivrosBiblia(); 
             carregarDados(null);
         };
 
         async function carregarDados(icon) {
             if(icon) icon.classList.add('fa-spin');
             
+            // CARREGAR PALAVRAS (SUPABASE)
             try {
                 const respostaPalavras = await fetch(`${SB_URL}/rest/v1/palavras?select=*`, {
                     headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
@@ -267,6 +270,7 @@
                 
                 if (respostaPalavras.ok) {
                     listaPalavras = await respostaPalavras.json();
+                    
                     listaPalavras.sort((a, b) => {
                         const pegarTempo = (d) => {
                             if (!d) return 0;
@@ -276,6 +280,7 @@
                         };
                         return pegarTempo(b.data) - pegarTempo(a.data);
                     });
+                    
                     renderizarPalavras(listaPalavras);
                 }
             } catch (e) {
@@ -283,15 +288,18 @@
                 document.getElementById('listaPalavras').innerHTML = '<p style="text-align:center; color:#dc3545;">Erro ao carregar palavras.</p>';
             }
 
+            // CARREGAR AGENDA (GOOGLE SCRIPT)
             try {
                 const urlCompleta = `${URL_GOOGLE_SCRIPT}?action=buscarAgenda`;
-                const respostaAgenda = await fetch(urlCompleta);
+                // Adicionado 'redirect: follow' para evitar bloqueios de CORS do Apps Script
+                const respostaAgenda = await fetch(urlCompleta, { redirect: "follow" });
                 const dadosTexto = await respostaAgenda.text();
                 
                 try {
                     listaAgenda = JSON.parse(dadosTexto);
                     renderizarAgenda(listaAgenda);
                 } catch(errParse) {
+                    console.error("Erro no parse da agenda:", errParse);
                     renderizarAgenda([]); 
                 }
             } catch(e) {
@@ -397,7 +405,7 @@
             }
         }
 
-        // ================= SISTEMA DA BÍBLIA AUTOMATIZADO =================
+        // ================= SISTEMA DA BÍBLIA (AUTOMATIZADO) =================
         const dadosBiblia = [
             { id: "genesis", nome: "Gênesis", caps: 50 }, { id: "exodo", nome: "Êxodo", caps: 40 }, { id: "levitico", nome: "Levítico", caps: 27 }, { id: "numeros", nome: "Números", caps: 36 },
             { id: "deuteronomio", nome: "Deuteronômio", caps: 34 }, { id: "josue", nome: "Josué", caps: 24 }, { id: "juizes", nome: "Juízes", caps: 21 }, { id: "rute", nome: "Rute", caps: 4 },
@@ -449,7 +457,7 @@
             const capitulo = document.getElementById('biblia-capitulo').value;
             const selectLivro = document.getElementById('biblia-livro');
             
-            // Só executa se houver um livro selecionado
+            // Trava de segurança para não rodar em branco
             if(!livroId || !capitulo) return;
 
             const nomeLivro = selectLivro.options[selectLivro.selectedIndex].text;
