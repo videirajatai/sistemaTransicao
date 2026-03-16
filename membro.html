@@ -222,9 +222,8 @@
         const usuarioLogado = sessionStorage.getItem('usuarioLogado');
         
         if (!usuarioLogado) {
-            window.location.href = 'index.html'; // Se não estiver logado, volta pro início
+            window.location.href = 'index.html'; 
         } else {
-            // Mostra apenas o primeiro nome do membro na saudação
             const primeiroNome = usuarioLogado.split(' ')[0];
             document.getElementById('texto-boas-vindas').innerText = `Olá, ${primeiroNome}`;
         }
@@ -238,8 +237,8 @@
         const SB_URL = "https://ryvfogmfpjyamgqsltks.supabase.co"; 
         const SB_KEY = "sb_publishable_nFMOC-fPkJnsmf5_noOTBg_tKV6Cr1q";
         
-        // RECUPERADO O SEU SESSIONSTORAGE PARA NÃO QUEBRAR A COMUNICAÇÃO DA AGENDA E E-MAIL
-        const URL_GOOGLE_SCRIPT = sessionStorage.getItem('urlApi') || "https://script.google.com/macros/s/AKfycbxnystn3UqAKnfLUgw7tXS8CzrnpxTS0iax80rhMCRs-T47ibodGYvbRw2KRrtsnCzn/exec";
+        // URL DIRETA e PURA da sua Agenda no Google Script
+        const URL_GOOGLE_SCRIPT = "https://script.google.com/macros/s/AKfycbxnystn3UqAKnfLUgw7tXS8CzrnpxTS0iax80rhMCRs-T47ibodGYvbRw2KRrtsnCzn/exec";
 
         let listaPalavras = [];
         let listaAgenda = [];
@@ -288,20 +287,11 @@
                 document.getElementById('listaPalavras').innerHTML = '<p style="text-align:center; color:#dc3545;">Erro ao carregar palavras.</p>';
             }
 
-            // CARREGAR AGENDA (GOOGLE SCRIPT)
+            // CARREGAR AGENDA (GOOGLE SCRIPT - URL PURA E COM SUPORTE A REDIRECT)
             try {
-                const urlCompleta = `${URL_GOOGLE_SCRIPT}?action=buscarAgenda`;
-                // Adicionado 'redirect: follow' para evitar bloqueios de CORS do Apps Script
-                const respostaAgenda = await fetch(urlCompleta, { redirect: "follow" });
-                const dadosTexto = await respostaAgenda.text();
-                
-                try {
-                    listaAgenda = JSON.parse(dadosTexto);
-                    renderizarAgenda(listaAgenda);
-                } catch(errParse) {
-                    console.error("Erro no parse da agenda:", errParse);
-                    renderizarAgenda([]); 
-                }
+                const respostaAgenda = await fetch(URL_GOOGLE_SCRIPT, { redirect: "follow" });
+                const dados = await respostaAgenda.json();
+                renderizarAgenda(dados);
             } catch(e) {
                 console.error("Erro na Agenda:", e);
                 renderizarAgenda([]);
@@ -360,7 +350,7 @@
                 <div class="member-card">
                     <div class="card-header">
                         <strong style="font-size: 1.1rem; color: #1e293b;">${a[0] || ''}</strong>
-                        <span class="cat-badge" style="background-color: ${corTipo}; color: white;">${a[2] || 'Evento'}</span>
+                        <span class="cat-badge" style="background-color: ${corTipo}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">${a[2] || 'Evento'}</span>
                     </div>
                     <div style="font-size: 0.9rem; color: #64748b; margin-top: 5px;">
                         <i class="far fa-clock"></i> ${a[1] || ''}
@@ -405,7 +395,7 @@
             }
         }
 
-        // ================= SISTEMA DA BÍBLIA (AUTOMATIZADO) =================
+        // ================= SISTEMA DA BÍBLIA AUTOMATIZADO =================
         const dadosBiblia = [
             { id: "genesis", nome: "Gênesis", caps: 50 }, { id: "exodo", nome: "Êxodo", caps: 40 }, { id: "levitico", nome: "Levítico", caps: 27 }, { id: "numeros", nome: "Números", caps: 36 },
             { id: "deuteronomio", nome: "Deuteronômio", caps: 34 }, { id: "josue", nome: "Josué", caps: 24 }, { id: "juizes", nome: "Juízes", caps: 21 }, { id: "rute", nome: "Rute", caps: 4 },
@@ -447,7 +437,6 @@
                 selectCapitulo.innerHTML = htmlCaps;
                 selectCapitulo.value = "1";
                 
-                // Dispara a busca do capítulo automaticamente sempre que mudar o livro
                 buscarCapituloBiblia();
             }
         }
@@ -457,7 +446,6 @@
             const capitulo = document.getElementById('biblia-capitulo').value;
             const selectLivro = document.getElementById('biblia-livro');
             
-            // Trava de segurança para não rodar em branco
             if(!livroId || !capitulo) return;
 
             const nomeLivro = selectLivro.options[selectLivro.selectedIndex].text;
