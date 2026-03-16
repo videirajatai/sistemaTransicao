@@ -446,7 +446,7 @@
         }
 
         // ================= NOVAS FUNÇÕES: RECUPERAR SENHA =================
-        async function enviarRecuperacao() {
+       async function enviarRecuperacao() {
             const email = document.getElementById('rec-email').value.trim();
             const btn = document.getElementById('btn-recuperar');
             const erro = document.getElementById('mensagem-erro-rec');
@@ -462,21 +462,28 @@
             erro.style.display = 'none';
 
             try {
-                // Envia para o seu Google Script (GS) configurado
-                await fetch(urlBackend, {
+                // Envio POST "limpo" para o Google Script não dar bloqueio de CORS
+                const resposta = await fetch(urlBackend, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'recuperar_senha', email: email })
                 });
 
-                alert("Se o e-mail existir, você receberá instruções de redefinição.");
-                document.getElementById('rec-email').value = "";
-                mudarTela('bloco-login');
+                const dados = await resposta.json();
+
+                if (dados.status === "erro") {
+                    // SE DER ERRO (ex: O banco bloqueou), ELE MOSTRA NA TELA AGORA!
+                    erro.innerText = "⚠️ Erro: " + dados.mensagem;
+                    erro.style.display = 'block';
+                } else {
+                    alert("Se o e-mail existir, você receberá instruções de redefinição no seu e-mail.");
+                    document.getElementById('rec-email').value = "";
+                    mudarTela('bloco-login');
+                }
 
             } catch (e) {
                 erro.innerText = "⚠️ Erro ao comunicar com o servidor.";
                 erro.style.display = 'block';
+                console.error(e);
             } finally {
                 btn.innerText = "Enviar Link";
                 btn.disabled = false;
